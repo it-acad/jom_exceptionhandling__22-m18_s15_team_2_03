@@ -3,36 +3,46 @@ package com.softserve.itacademy.service.impl;
 import com.softserve.itacademy.model.ToDo;
 import com.softserve.itacademy.repository.ToDoRepository;
 import com.softserve.itacademy.service.ToDoService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.EntityNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class ToDoServiceImpl implements ToDoService {
 
-    private ToDoRepository todoRepository;
+    private final ToDoRepository todoRepository;
 
-    public ToDoServiceImpl(ToDoRepository todoRepository) {
-        this.todoRepository = todoRepository;
-    }
 
     @Override
     public ToDo create(ToDo todo) {
-            return todoRepository.save(todo);
+            return Optional.ofNullable(todo)
+                    .map(todoRepository::save)
+                    .orElseThrow(() -> new EntityNotFoundException("Wrong ToDo format or null"));
     }
 
     @Override
     public ToDo readById(long id) {
         Optional<ToDo> optional = todoRepository.findById(id);
-            return optional.get();
+            return optional.orElseThrow(() -> new EntityNotFoundException("to do not found"));
     }
 
     @Override
     public ToDo update(ToDo todo) {
-            ToDo oldTodo = readById(todo.getId());
-                return todoRepository.save(todo);
+
+            Optional<ToDo> newTodo = Optional.ofNullable(todo);
+            Optional<ToDo> oldTodo = Optional.ofNullable(readById(todo.getId()));
+
+            if (oldTodo.isPresent() && newTodo.isPresent()) {
+                return todoRepository.saveAndFlush(todo);
+            } else {
+                throw new EntityNotFoundException("Wrong ToDo format or null");
+            }
     }
 
     @Override
