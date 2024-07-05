@@ -10,4 +10,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query(value = "select * from users where email =?1", nativeQuery = true)
     User getUserByEmail(String email);
+
+    User removeById(long id);
 }

@@ -1,10 +1,12 @@
 package com.softserve.itacademy.service.impl;
 
+import com.softserve.itacademy.exception.NullEntityReferenceException;
 import com.softserve.itacademy.model.User;
 import com.softserve.itacademy.repository.UserRepository;
 import com.softserve.itacademy.service.UserService;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.EntityNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -12,7 +14,7 @@ import java.util.Optional;
 @Service
 public class UserServiceImpl implements UserService {
 
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
     public UserServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
@@ -20,13 +22,18 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User create(User user) {
-            return userRepository.save(user);
+        return Optional
+                .ofNullable(user)
+                .map(userRepository::save)
+                .orElseThrow(() -> new NullEntityReferenceException("User can't be null and won't be affected!"));
     }
 
     @Override
     public User readById(long id) {
-        Optional<User> optional = userRepository.findById(id);
-            return optional.get();
+            return Optional
+                    .of(id)
+                    .flatMap(userRepository::findById)
+                    .orElseThrow(() -> new EntityNotFoundException("User with id " + id + " not found"));
     }
 
     @Override
@@ -37,8 +44,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void delete(long id) {
-        User user = readById(id);
-            userRepository.delete(user);
+        Optional
+                .of(id)
+                .filter(userRepository::existsById)
+                .map(userRepository::removeById)
+                .orElseThrow(() -> new EntityNotFoundException("User with id " + id + " not found"));
     }
 
     @Override

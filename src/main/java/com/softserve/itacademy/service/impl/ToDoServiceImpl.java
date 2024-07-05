@@ -1,10 +1,12 @@
 package com.softserve.itacademy.service.impl;
 
+import com.softserve.itacademy.exception.NullEntityReferenceException;
 import com.softserve.itacademy.model.ToDo;
 import com.softserve.itacademy.repository.ToDoRepository;
 import com.softserve.itacademy.service.ToDoService;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.EntityNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -20,13 +22,18 @@ public class ToDoServiceImpl implements ToDoService {
 
     @Override
     public ToDo create(ToDo todo) {
-            return todoRepository.save(todo);
+        return Optional
+                .ofNullable(todo)
+                .map(todoRepository::save)
+                .orElseThrow(() -> new NullEntityReferenceException("ToDo can't be null and won't be affected!"));
     }
 
     @Override
     public ToDo readById(long id) {
-        Optional<ToDo> optional = todoRepository.findById(id);
-            return optional.get();
+        return Optional
+                .of(id)
+                .flatMap(todoRepository::findById)
+                .orElseThrow(() -> new EntityNotFoundException("ToDo with id " + id + " not found"));
     }
 
     @Override
@@ -37,8 +44,11 @@ public class ToDoServiceImpl implements ToDoService {
 
     @Override
     public void delete(long id) {
-        ToDo todo = readById(id);
-            todoRepository.delete(todo);
+        Optional
+                .of(id)
+                .filter(todoRepository::existsById)
+                .map(todoRepository::removeById)
+                .orElseThrow(() -> new EntityNotFoundException("ToDo with id " + id + " not found"));
     }
 
     @Override
